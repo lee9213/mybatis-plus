@@ -1,18 +1,25 @@
 package com.baomidou.mybatisplus.extension.plugins;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.baomidou.mybatisplus.core.exceptions.MybatisPlusException;
+import com.baomidou.mybatisplus.core.parser.SqlParserHelper;
+import com.baomidou.mybatisplus.core.toolkit.EncryptUtils;
+import com.baomidou.mybatisplus.core.toolkit.PluginUtils;
+import lombok.Data;
+import net.sf.jsqlparser.expression.BinaryExpression;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
+import net.sf.jsqlparser.expression.operators.relational.InExpression;
+import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.delete.Delete;
+import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SubSelect;
+import net.sf.jsqlparser.statement.update.Update;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
@@ -27,29 +34,13 @@ import org.apache.ibatis.plugin.Signature;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.SystemMetaObject;
 
-import com.baomidou.mybatisplus.core.exceptions.MybatisPlusException;
-import com.baomidou.mybatisplus.core.parser.SqlParserHelper;
-import com.baomidou.mybatisplus.core.toolkit.EncryptUtils;
-import com.baomidou.mybatisplus.core.toolkit.PluginUtils;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-
-import lombok.Data;
-import net.sf.jsqlparser.expression.BinaryExpression;
-import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.Function;
-import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
-import net.sf.jsqlparser.expression.operators.relational.InExpression;
-import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.delete.Delete;
-import net.sf.jsqlparser.statement.select.Join;
-import net.sf.jsqlparser.statement.select.PlainSelect;
-import net.sf.jsqlparser.statement.select.Select;
-import net.sf.jsqlparser.statement.select.SubSelect;
-import net.sf.jsqlparser.statement.update.Update;
+import java.sql.Connection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author willenfoo
@@ -132,16 +123,16 @@ public class IllegalSQLInterceptor implements Interceptor {
      * 如果SQL用了 left Join，验证是否有or、not等等，并且验证是否使用了索引
      *
      * @param joins
-     * @param table
-     * @param connection
+//     * @param table
+//     * @param connection
      */
-    private static void validJoins(List<Join> joins, Table table, Connection connection) {
+    private static void validJoins(List<Join> joins/*, Table table, Connection connection*/) {
         //允许执行join，验证jion是否使用索引等等
         if (joins != null) {
             for (Join join : joins) {
-                Table rightTable = (Table) join.getRightItem();
+//                Table rightTable = (Table) join.getRightItem();
                 Expression expression = join.getOnExpression();
-                validWhere(expression, table, rightTable, connection);
+                validWhere(expression/*, table, rightTable, connection*/);
             }
         }
     }
@@ -152,7 +143,7 @@ public class IllegalSQLInterceptor implements Interceptor {
      * @param table
      * @param columnName
      * @param connection
-     */
+     *//*
     private static void validUseIndex(Table table, String columnName, Connection connection) {
         //是否使用索引
         boolean useIndexFlag = false;
@@ -178,28 +169,28 @@ public class IllegalSQLInterceptor implements Interceptor {
         if (!useIndexFlag) {
             throw new MybatisPlusException("非法SQL，SQL未使用到索引, table:" + table + ", columnName:" + columnName);
         }
-    }
+    }*/
+
+//    /**
+//     * 验证where条件的字段，是否有not、or等等，并且where的第一个字段，必须使用索引
+//     *
+//     * @param expression
+//     * @param table
+//     * @param connection
+//     */
+//    private static void validWhere(Expression expression, Table table, Connection connection) {
+//        validWhere(expression, table, null, connection);
+//    }
 
     /**
      * 验证where条件的字段，是否有not、or等等，并且where的第一个字段，必须使用索引
      *
      * @param expression
-     * @param table
-     * @param connection
+//     * @param table
+//     * @param joinTable
+//     * @param connection
      */
-    private static void validWhere(Expression expression, Table table, Connection connection) {
-        validWhere(expression, table, null, connection);
-    }
-
-    /**
-     * 验证where条件的字段，是否有not、or等等，并且where的第一个字段，必须使用索引
-     *
-     * @param expression
-     * @param table
-     * @param joinTable
-     * @param connection
-     */
-    private static void validWhere(Expression expression, Table table, Table joinTable, Connection connection) {
+    private static void validWhere(Expression expression/*, Table table, Table joinTable, Connection connection*/) {
         validExpression(expression);
         if (expression instanceof BinaryExpression) {
             //获得左边表达式
@@ -208,23 +199,23 @@ public class IllegalSQLInterceptor implements Interceptor {
 
             //如果左边表达式为Column对象，则直接获得列名
             if (leftExpression instanceof Column) {
-                Expression rightExpression = ((BinaryExpression) expression).getRightExpression();
-                if (joinTable != null && rightExpression instanceof Column) {
-                    if (Objects.equals(((Column) rightExpression).getTable().getName(), table.getAlias().getName())) {
-                        validUseIndex(table, ((Column) rightExpression).getColumnName(), connection);
-                        validUseIndex(joinTable, ((Column) leftExpression).getColumnName(), connection);
-                    } else {
-                        validUseIndex(joinTable, ((Column) rightExpression).getColumnName(), connection);
-                        validUseIndex(table, ((Column) leftExpression).getColumnName(), connection);
-                    }
-                } else {
-                    //获得列名
-                    validUseIndex(table, ((Column) leftExpression).getColumnName(), connection);
-                }
+//                Expression rightExpression = ((BinaryExpression) expression).getRightExpression();
+//                if (joinTable != null && rightExpression instanceof Column) {
+//                    if (Objects.equals(((Column) rightExpression).getTable().getName(), table.getAlias().getName())) {
+//                        validUseIndex(table, ((Column) rightExpression).getColumnName(), connection);
+//                        validUseIndex(joinTable, ((Column) leftExpression).getColumnName(), connection);
+//                    } else {
+//                        validUseIndex(joinTable, ((Column) rightExpression).getColumnName(), connection);
+//                        validUseIndex(table, ((Column) leftExpression).getColumnName(), connection);
+//                    }
+//                } else {
+//                    //获得列名
+//                    validUseIndex(table, ((Column) leftExpression).getColumnName(), connection);
+//                }
             }
             //如果BinaryExpression，进行迭代
             else if (leftExpression instanceof BinaryExpression) {
-                validWhere(leftExpression, table, joinTable, connection);
+                validWhere(leftExpression/*, table, joinTable, connection*/);
             }
 
             //获得右边表达式，并分解
@@ -233,57 +224,57 @@ public class IllegalSQLInterceptor implements Interceptor {
         }
     }
 
-    /**
-     * 得到表的索引信息
-     *
-     * @param dbName
-     * @param tableName
-     * @param conn
-     * @return
-     */
-    public static List<IndexInfo> getIndexInfos(String dbName, String tableName, Connection conn) {
-        return getIndexInfos(null, dbName, tableName, conn);
-    }
-
-    /**
-     * 得到表的索引信息
-     *
-     * @param key
-     * @param dbName
-     * @param tableName
-     * @param conn
-     * @return
-     */
-    public static List<IndexInfo> getIndexInfos(String key, String dbName, String tableName, Connection conn) {
-        List<IndexInfo> indexInfos = null;
-        if (StringUtils.isNotEmpty(key)) {
-            indexInfos = indexInfoMap.get(key);
-        }
-        if (indexInfos == null || indexInfos.isEmpty()) {
-            ResultSet rs;
-            try {
-                DatabaseMetaData metadata = conn.getMetaData();
-                rs = metadata.getIndexInfo(dbName, dbName, tableName, false, true);
-                indexInfos = new ArrayList<>();
-                while (rs.next()) {
-                    //索引中的列序列号等于1，才有效
-                    if (Objects.equals(rs.getString(8), "1")) {
-                        IllegalSQLInterceptor.IndexInfo indexInfo = new IllegalSQLInterceptor.IndexInfo();
-                        indexInfo.setDbName(rs.getString(1));
-                        indexInfo.setTableName(rs.getString(3));
-                        indexInfo.setColumnName(rs.getString(9));
-                        indexInfos.add(indexInfo);
-                    }
-                }
-                if (StringUtils.isNotEmpty(key)) {
-                    indexInfoMap.put(key, indexInfos);
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return indexInfos;
-    }
+//    /**
+//     * 得到表的索引信息
+//     *
+//     * @param dbName
+//     * @param tableName
+//     * @param conn
+//     * @return
+//     */
+//    public static List<IndexInfo> getIndexInfos(String dbName, String tableName, Connection conn) {
+//        return getIndexInfos(null, dbName, tableName, conn);
+//    }
+//
+//    /**
+//     * 得到表的索引信息
+//     *
+//     * @param key
+//     * @param dbName
+//     * @param tableName
+//     * @param conn
+//     * @return
+//     */
+//    public static List<IndexInfo> getIndexInfos(String key, String dbName, String tableName, Connection conn) {
+//        List<IndexInfo> indexInfos = null;
+//        if (StringUtils.isNotEmpty(key)) {
+//            indexInfos = indexInfoMap.get(key);
+//        }
+//        if (indexInfos == null || indexInfos.isEmpty()) {
+//            ResultSet rs;
+//            try {
+//                DatabaseMetaData metadata = conn.getMetaData();
+//                rs = metadata.getIndexInfo(dbName, dbName, tableName, false, true);
+//                indexInfos = new ArrayList<>();
+//                while (rs.next()) {
+//                    //索引中的列序列号等于1，才有效
+//                    if (Objects.equals(rs.getString(8), "1")) {
+//                        IllegalSQLInterceptor.IndexInfo indexInfo = new IllegalSQLInterceptor.IndexInfo();
+//                        indexInfo.setDbName(rs.getString(1));
+//                        indexInfo.setTableName(rs.getString(3));
+//                        indexInfo.setColumnName(rs.getString(9));
+//                        indexInfos.add(indexInfo);
+//                    }
+//                }
+//                if (StringUtils.isNotEmpty(key)) {
+//                    indexInfoMap.put(key, indexInfos);
+//                }
+//            } catch (SQLException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        return indexInfos;
+//    }
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
@@ -302,33 +293,33 @@ public class IllegalSQLInterceptor implements Interceptor {
             logger.debug("该SQL已验证，无需再次验证，，SQL:" + originalSql);
             return invocation.proceed();
         }
-        Connection connection = (Connection) invocation.getArgs()[0];
+//        Connection connection = (Connection) invocation.getArgs()[0];
         Statement statement = CCJSqlParserUtil.parse(originalSql);
         Expression where = null;
-        Table table = null;
+//        Table table = null;
         List<Join> joins = null;
         if (statement instanceof Select) {
             PlainSelect plainSelect = (PlainSelect) ((Select) statement).getSelectBody();
             where = plainSelect.getWhere();
-            table = (Table) plainSelect.getFromItem();
+//            table = (Table) plainSelect.getFromItem();
             joins = plainSelect.getJoins();
         } else if (statement instanceof Update) {
             Update update = (Update) statement;
             where = update.getWhere();
-            table = update.getTables().get(0);
+//            table = update.getTables().get(0);
             joins = update.getJoins();
         } else if (statement instanceof Delete) {
             Delete delete = (Delete) statement;
             where = delete.getWhere();
-            table = delete.getTable();
+//            table = delete.getTable();
             joins = delete.getJoins();
         }
         //where条件不能为空
         if (where == null) {
             throw new MybatisPlusException("非法SQL，必须要有where条件");
         }
-        validWhere(where, table, connection);
-        validJoins(joins, table, connection);
+        validWhere(where/*, table, connection*/);
+        validJoins(joins/*, table, connection*/);
         //缓存验证结果
         cacheValidResult.add(md5Base64);
         return invocation.proceed();
