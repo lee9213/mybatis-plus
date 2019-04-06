@@ -279,7 +279,7 @@ public class MysqlTestDataMapperTest {
     @Test
     public void d7_selectPage() {
         Page<CommonData> page = new Page<>(1, 5);
-        page.setDesc("c_time", "u_time");
+//        page.setDesc("c_time", "u_time");
         IPage<CommonData> dataPage = commonMapper.selectPage(page, null);
         Assert.assertSame(dataPage, page);
         Assert.assertNotEquals(null, dataPage.getTotal());
@@ -308,7 +308,7 @@ public class MysqlTestDataMapperTest {
     @Test
     public void d7_arLambdaSelectPage() {
         Page<CommonData> page = new Page<>(1, 5);
-        page.setDesc("c_time", "u_time");
+//        page.setDesc("c_time", "u_time");
         IPage<CommonData> dataPage = new CommonData().selectPage(page, new QueryWrapper<CommonData>().lambda());
         Assert.assertSame(dataPage, page);
         Assert.assertNotEquals(null, dataPage.getTotal());

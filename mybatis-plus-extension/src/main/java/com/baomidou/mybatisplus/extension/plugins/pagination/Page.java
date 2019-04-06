@@ -16,7 +16,6 @@
 package com.baomidou.mybatisplus.extension.plugins.pagination;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -49,18 +48,7 @@ public class Page<T> implements IPage<T> {
      * 当前页
      */
     private long current = 1;
-    /**
-     * <p>
-     * SQL 排序 ASC 数组
-     * </p>
-     */
-    private String[] ascs;
-    /**
-     * <p>
-     * SQL 排序 DESC 数组
-     * </p>
-     */
-    private String[] descs;
+
     /**
      * <p>
      * 自动优化 COUNT SQL
@@ -105,28 +93,6 @@ public class Page<T> implements IPage<T> {
         this.size = size;
         this.total = total;
         this.isSearchCount = isSearchCount;
-    }
-
-    /**
-     * <p>
-     * 是否存在上一页
-     * </p>
-     *
-     * @return true / false
-     */
-    public boolean hasPrevious() {
-        return this.current > 1;
-    }
-
-    /**
-     * <p>
-     * 是否存在下一页
-     * </p>
-     *
-     * @return true / false
-     */
-    public boolean hasNext() {
-        return this.current < this.getPages();
     }
 
     @Override
@@ -174,55 +140,6 @@ public class Page<T> implements IPage<T> {
     }
 
     @Override
-    public String[] ascs() {
-        return ascs;
-    }
-
-    public Page<T> setAscs(List<String> ascs) {
-        if (CollectionUtils.isNotEmpty(ascs)) {
-            this.ascs = ascs.toArray(new String[0]);
-        }
-        return this;
-    }
-
-
-    /**
-     * <p>
-     * 升序
-     * </p>
-     *
-     * @param ascs 多个升序字段
-     */
-    public Page<T> setAsc(String... ascs) {
-        this.ascs = ascs;
-        return this;
-    }
-
-    @Override
-    public String[] descs() {
-        return descs;
-    }
-
-    public Page<T> setDescs(List<String> descs) {
-        if (CollectionUtils.isNotEmpty(descs)) {
-            this.descs = descs.toArray(new String[0]);
-        }
-        return this;
-    }
-
-    /**
-     * <p>
-     * 降序
-     * </p>
-     *
-     * @param descs 多个降序字段
-     */
-    public Page<T> setDesc(String... descs) {
-        this.descs = descs;
-        return this;
-    }
-
-    @Override
     public boolean optimizeCountSql() {
         return optimizeCountSql;
     }
@@ -233,15 +150,5 @@ public class Page<T> implements IPage<T> {
             return false;
         }
         return isSearchCount;
-    }
-
-    public Page<T> setSearchCount(boolean isSearchCount) {
-        this.isSearchCount = isSearchCount;
-        return this;
-    }
-
-    public Page<T> setOptimizeCountSql(boolean optimizeCountSql) {
-        this.optimizeCountSql = optimizeCountSql;
-        return this;
     }
 }

@@ -17,7 +17,6 @@ package com.baomidou.mybatisplus.core.metadata;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
@@ -31,39 +30,6 @@ import static java.util.stream.Collectors.toList;
  * @since 2018-06-09
  */
 public interface IPage<T> extends Serializable {
-
-    /**
-     * <p>
-     * 降序字段数组
-     * </p>
-     *
-     * @return order by desc 的字段数组
-     */
-    default String[] descs() {
-        return null;
-    }
-
-    /**
-     * <p>
-     * 升序字段数组
-     * </p>
-     *
-     * @return order by asc 的字段数组
-     */
-    default String[] ascs() {
-        return null;
-    }
-
-    /**
-     * <p>
-     * KEY/VALUE 条件
-     * </p>
-     *
-     * @return
-     */
-    default Map<Object, Object> condition() {
-        return null;
-    }
 
     /**
      * <p>

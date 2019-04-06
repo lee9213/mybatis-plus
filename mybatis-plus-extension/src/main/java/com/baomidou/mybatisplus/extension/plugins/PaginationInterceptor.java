@@ -20,7 +20,9 @@ import com.baomidou.mybatisplus.core.MybatisDefaultParameterHandler;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.parser.ISqlParser;
 import com.baomidou.mybatisplus.core.parser.SqlInfo;
-import com.baomidou.mybatisplus.core.toolkit.*;
+import com.baomidou.mybatisplus.core.toolkit.ExceptionUtils;
+import com.baomidou.mybatisplus.core.toolkit.PluginUtils;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.handlers.AbstractSqlParserHandler;
 import com.baomidou.mybatisplus.extension.plugins.pagination.DialectFactory;
 import com.baomidou.mybatisplus.extension.plugins.pagination.DialectModel;
@@ -33,7 +35,11 @@ import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ParameterMapping;
 import org.apache.ibatis.mapping.SqlCommandType;
-import org.apache.ibatis.plugin.*;
+import org.apache.ibatis.plugin.Interceptor;
+import org.apache.ibatis.plugin.Intercepts;
+import org.apache.ibatis.plugin.Invocation;
+import org.apache.ibatis.plugin.Plugin;
+import org.apache.ibatis.plugin.Signature;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.SystemMetaObject;
 import org.apache.ibatis.scripting.defaults.DefaultParameterHandler;
@@ -43,9 +49,10 @@ import org.apache.ibatis.session.RowBounds;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.*;
-
-import static java.util.stream.Collectors.joining;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * <p>
@@ -76,45 +83,6 @@ public class PaginationInterceptor extends AbstractSqlParserHandler implements I
      * 方言实现类
      */
     private String dialectClazz;
-
-    /**
-     * 查询SQL拼接Order By
-     *
-     * @param originalSql 需要拼接的SQL
-     * @param page        page对象
-     * @param orderBy     是否需要拼接Order By
-     * @return
-     */
-    public static String concatOrderBy(String originalSql, IPage page, boolean orderBy) {
-        if (orderBy && (ArrayUtils.isNotEmpty(page.ascs())
-            || ArrayUtils.isNotEmpty(page.descs()))) {
-            StringBuilder buildSql = new StringBuilder(originalSql);
-            String ascStr = concatOrderBuilder(page.ascs(), " ASC");
-            String descStr = concatOrderBuilder(page.descs(), " DESC");
-            if (StringUtils.isNotEmpty(ascStr) && StringUtils.isNotEmpty(descStr)) {
-                ascStr += ", ";
-            }
-            if (StringUtils.isNotEmpty(ascStr) || StringUtils.isNotEmpty(descStr)) {
-                buildSql.append(" ORDER BY ").append(ascStr).append(descStr);
-            }
-            return buildSql.toString();
-        }
-        return originalSql;
-    }
-
-    /**
-     * 拼接多个排序方法
-     *
-     * @param columns
-     * @param orderWord
-     */
-    private static String concatOrderBuilder(String[] columns, String orderWord) {
-        if (ArrayUtils.isNotEmpty(columns)) {
-            return Arrays.stream(columns).filter(StringUtils::isNotEmpty)
-                .map(i -> i + orderWord).collect(joining(StringPool.COMMA));
-        }
-        return StringUtils.EMPTY;
-    }
 
     /**
      * Physical Page Interceptor for all the queries with parameter {@link RowBounds}
@@ -163,18 +131,15 @@ public class PaginationInterceptor extends AbstractSqlParserHandler implements I
         DbType dbType = StringUtils.isNotEmpty(dialectType) ? DbType.getDbType(dialectType)
             : JdbcUtils.getDbType(connection.getMetaData().getURL());
 
-        boolean orderBy = true;
         if (page.isSearchCount()) {
             SqlInfo sqlInfo = SqlParserUtils.getOptimizeCountSql(page.optimizeCountSql(), sqlParser, originalSql);
-            orderBy = sqlInfo.isOrderBy();
             this.queryTotal(overflow, sqlInfo.getSql(), mappedStatement, boundSql, page, connection);
             if (page.getTotal() <= 0) {
                 return invocation.proceed();
             }
         }
 
-        String buildSql = concatOrderBy(originalSql, page, orderBy);
-        DialectModel model = DialectFactory.buildPaginationSql(page, buildSql, dbType, dialectClazz);
+        DialectModel model = DialectFactory.buildPaginationSql(page, originalSql, dbType, dialectClazz);
         Configuration configuration = mappedStatement.getConfiguration();
         List<ParameterMapping> mappings = new ArrayList<>(boundSql.getParameterMappings());
         Map<String, Object> additionalParameters = (Map<String, Object>) metaObject.getValue("delegate.boundSql.additionalParameters");
